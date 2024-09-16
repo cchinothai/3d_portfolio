@@ -10,13 +10,66 @@ Title: Fox's islands
 import { useRef, useEffect } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
-import islandScene from '../assets/3d/island.glb'
+import islandScene from '../assets/3d/isla nd.glb'
 import { a } from '@react-spring/three' //enables animations
 
-const Island = (props) => {
+const Island = ( isRotating, setIsRotating, ...props) => {
   const islandRef = useRef();
 
+  //get access to 3js renderer and viewport
+  const {gl, viewport } = useThree(); 
+  //hook then ref to get mouse position
+  const lastX = useRef(0);
+  const rotationSpeed = useRef(0);
+  //damping factor
+  const dampingFactor = 0.95 //how fast it scrolls. 
+
   const { nodes, materials } = useGLTF(islandScene)
+
+  const handlePointerDown = (e) => {
+    e.stopPropogation(); //mouse click won't touch any other functions on the screen
+    e.preventDefault(); //don't reload page etc. 
+    setIsRotating(true);
+
+    //figure out if its a touch event on phone or mouse event
+    const clientX = e.touches 
+    ? e.touches[0].clientX
+    : e.clientX;
+
+    lastX.current = clientX
+  }
+  const handlePointerUp = (e) => {
+    e.stopPropogation(); //mouse click won't touch any other functions on the screen
+    e.preventDefault(); //don't reload page etc. 
+    setIsRotating(false);
+
+    const clientX = e.touches 
+    ? e.touches[0].clientX
+    : e.clientX;
+
+    //calculate change in horizontal position
+    const delta = (clientX - lastX.current / viewport.width);
+
+    //update island's rotation based on mouse
+    islandRef.current.rotation.y += delta * 0.01 * Math.PI;
+
+    lastX.current = clientX;
+
+    //update rotation speed 
+    rotationSpeed.current = delta * 0.01 * Math.PI;
+
+
+  }
+  const handlePointerMove = (e) => {
+    e.stopPropogation(); //mouse click won't touch any other functions on the screen
+    e.preventDefault(); //don't reload page etc. 
+
+    if(isRotating){
+      handlePointerUp(e);
+    }
+  }
+
+
   return (
      // {Island 3D model from: https://sketchfab.com/3d-models/foxs-islands-163b68e09fcc47618450150be7785907}
      <a.group ref={islandRef} {...props}>
